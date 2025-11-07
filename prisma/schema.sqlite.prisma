@@ -1,0 +1,207 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  hash      String
+  role      String   @default("guest") // guest, operator, admin
+  name      String?
+  phone     String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  reservations Reservation[]
+  auditLogs   AuditLog[]
+
+  @@map("users")
+}
+
+model Room {
+  id        String   @id @default(cuid())
+  number    String   @unique
+  type      String   // Standard, Deluxe, Suite
+  maxGuests Int
+  basePrice Int        // Price in cents
+  status    String     @default("available") // available, occupied, maintenance
+  createdAt DateTime   @default(now())
+
+  // Relations
+  reservations     Reservation[]
+  housekeepingTasks HousekeepingTask[]
+  maintenanceLogs  MaintenanceLog[]
+
+  @@map("rooms")
+}
+
+model RatePlan {
+  id                  String  @id @default(cuid())
+  roomType            String  // Standard, Deluxe, Suite
+  taxPercent          Float
+  depositPolicy       String
+  cancellationPolicy  String
+  createdAt           DateTime @default(now())
+
+  @@map("rate_plans")
+}
+
+model Reservation {
+  id              String            @id @default(cuid())
+  userId          String
+  roomId          String
+  checkInDate     DateTime
+  checkOutDate    DateTime
+  guests          Int
+  status          String            @default("pending") // pending, confirmed, checked_in, checked_out, canceled
+  totalAmount     Int              // Total amount in cents
+  depositHoldCents Int             // Deposit hold amount in cents
+  createdAt       DateTime         @default(now())
+
+  // Relations
+  user            User              @relation(fields: [userId], references: [id])
+  room            Room              @relation(fields: [roomId], references: [id])
+  guestProfile    GuestProfile?
+  identityDocument IdentityDocument?
+  paymentAuth     PaymentAuth?
+  biometricCheck  BiometricCheck?
+  digitalKey      DigitalKey?
+  housekeepingTasks HousekeepingTask[]
+
+  @@map("reservations")
+}
+
+model GuestProfile {
+  id            String  @id @default(cuid())
+  reservationId String  @unique
+  firstName     String
+  lastName      String
+  email         String
+  phone         String
+  country       String
+  isBusiness    Boolean @default(false)
+  company       String?
+  vat           String?
+
+  // Relations
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@map("guest_profiles")
+}
+
+model IdentityDocument {
+  id            String   @id @default(cuid())
+  reservationId String   @unique
+  frontUrl      String
+  backUrl       String?
+  ocrData       String?  // Store OCR results as JSON string
+  verified      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  // Relations
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@map("identity_documents")
+}
+
+model PaymentAuth {
+  id              String          @id @default(cuid())
+  reservationId   String          @unique
+  last4           String
+  brand           String
+  expMonth        Int
+  expYear         Int
+  amountHoldCents Int
+  status          String          @default("authorized") // authorized, failed, captured, released
+  providerRef     String?         // External payment provider reference
+  createdAt       DateTime        @default(now())
+
+  // Relations
+  reservation     Reservation     @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@map("payment_auths")
+}
+
+model BiometricCheck {
+  id            String            @id @default(cuid())
+  reservationId String            @unique
+  matchScore    Int               // Score from 0-100
+  status        String            // pass, fail, manual_review
+  imageUrl      String
+  createdAt     DateTime          @default(now())
+
+  // Relations
+  reservation   Reservation       @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@map("biometric_checks")
+}
+
+model DigitalKey {
+  id              String   @id @default(cuid())
+  reservationId   String   @unique
+  currentToken    String   // Current rotating token
+  expiresAt       DateTime
+  lastRotatedAt   DateTime @default(now())
+
+  // Relations
+  reservation     Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@map("digital_keys")
+}
+
+model HousekeepingTask {
+  id            String              @id @default(cuid())
+  reservationId String?
+  roomId        String
+  task          String
+  dueDate       DateTime
+  status        String              @default("pending") // pending, in_progress, completed
+  assignedTo    String?
+  completedAt   DateTime?
+
+  // Relations
+  reservation   Reservation?        @relation(fields: [reservationId], references: [id])
+  room          Room                @relation(fields: [roomId], references: [id])
+
+  @@map("housekeeping_tasks")
+}
+
+model MaintenanceLog {
+  id          String            @id @default(cuid())
+  roomId      String
+  issue       String
+  priority    String            @default("medium") // low, medium, high, critical
+  status      String            @default("open") // open, in_progress, resolved
+  assignedTo  String?
+  createdAt   DateTime          @default(now())
+  resolvedAt  DateTime?
+
+  // Relations
+  room        Room              @relation(fields: [roomId], references: [id])
+
+  @@map("maintenance_logs")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String
+  action      String
+  entityType  String
+  entityId    String
+  details     String?  // Additional details as JSON string
+  createdAt   DateTime @default(now())
+
+  // Relations
+  actor       User     @relation(fields: [actorUserId], references: [id])
+
+  @@map("audit_logs")
+}
+
