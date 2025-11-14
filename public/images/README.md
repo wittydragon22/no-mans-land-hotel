@@ -1,6 +1,6 @@
 # Logo Image
 
-Please place your logo image file here as `logo.png`.
+Please place your logo image file here as `logo.jpg`.
 
 The logo should be:
 - Format: PNG (with transparency preferred)
