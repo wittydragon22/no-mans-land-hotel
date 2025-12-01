@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 // import { motion } from 'framer-motion'
@@ -81,6 +81,12 @@ export default function BookingPage() {
       roomType: undefined,
     }
   })
+
+  // Clear old booking data when starting a new booking
+  useEffect(() => {
+    // Clear any existing booking data to start fresh
+    sessionStorage.removeItem('bookingData')
+  }, [])
 
   const onSubmit = async (data: any) => {
     try {

@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -64,6 +64,7 @@ model Reservation {
   status          String            @default("pending") // pending, confirmed, checked_in, checked_out, canceled
   totalAmount     Int              // Total amount in cents
   depositHoldCents Int             // Deposit hold amount in cents
+  confirmationCode String?         @unique // 6-digit confirmation code sent via email
   createdAt       DateTime         @default(now())
 
   // Relations
@@ -102,7 +103,7 @@ model IdentityDocument {
   reservationId String   @unique
   frontUrl      String
   backUrl       String?
-  ocrData       String?  // Store OCR results as JSON string
+  ocrData       Json?    // Store OCR results as JSON
   verified      Boolean  @default(false)
   createdAt     DateTime @default(now())
 
@@ -196,7 +197,7 @@ model AuditLog {
   action      String
   entityType  String
   entityId    String
-  details     String?  // Additional details as JSON string
+  details     Json?    // Additional details as JSON
   createdAt   DateTime @default(now())
 
   // Relations

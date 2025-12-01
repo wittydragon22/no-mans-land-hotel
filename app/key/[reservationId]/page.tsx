@@ -22,17 +22,94 @@ export default function DigitalKeyPage({ params }: DigitalKeyPageProps) {
   const [keyData, setKeyData] = useState<any>(null)
   const [timeLeft, setTimeLeft] = useState(30)
   const [isRotating, setIsRotating] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Load booking data from session storage
-    const stored = sessionStorage.getItem('bookingData')
-    if (stored) {
-      const bookingData = JSON.parse(stored)
-      if (bookingData.digitalKey) {
-        setKeyData(bookingData.digitalKey)
+    const loadKeyData = async () => {
+      setIsLoading(true)
+      
+      // First try to load from session storage (if coming from booking flow)
+      const stored = sessionStorage.getItem('bookingData')
+      if (stored) {
+        try {
+          const bookingData = JSON.parse(stored)
+          if (bookingData.digitalKey && bookingData.digitalKey.reservationId === params.reservationId) {
+            setKeyData({
+              ...bookingData.digitalKey,
+              qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(bookingData.digitalKey.currentToken)}`
+            })
+            setIsLoading(false)
+            return
+          }
+        } catch (error) {
+          console.error('Failed to parse session storage:', error)
+        }
+      }
+
+      // If not in session storage, fetch from API
+      try {
+        const response = await fetch(`/api/key/${params.reservationId}`, {
+          credentials: 'include'
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          if (result.ok && result.data.key) {
+            const key = result.data.key
+            setKeyData({
+              id: key.id,
+              reservationId: params.reservationId,
+              currentToken: key.currentToken,
+              expiresAt: new Date(key.expiresAt),
+              lastRotatedAt: new Date(key.lastRotatedAt),
+              qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(key.currentToken)}`
+            })
+          } else {
+            toast({
+              title: "Error",
+              description: result.error || "Failed to load digital key",
+              variant: "destructive",
+            })
+            router.push('/account')
+          }
+        } else if (response.status === 401) {
+          toast({
+            title: "Authentication Required",
+            description: "Please log in to view your digital key",
+            variant: "destructive",
+          })
+          router.push('/auth/login')
+        } else if (response.status === 404) {
+          toast({
+            title: "Digital Key Not Found",
+            description: "This reservation does not have a digital key",
+            variant: "destructive",
+          })
+          router.push('/account')
+        } else {
+          const result = await response.json()
+          toast({
+            title: "Error",
+            description: result.error || "Failed to load digital key",
+            variant: "destructive",
+          })
+          router.push('/account')
+        }
+      } catch (error) {
+        console.error('Failed to load digital key:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load digital key. Please try again.",
+          variant: "destructive",
+        })
+        router.push('/account')
+      } finally {
+        setIsLoading(false)
       }
     }
-  }, [])
+
+    loadKeyData()
+  }, [params.reservationId, router, toast])
 
   useEffect(() => {
     if (!keyData) return
@@ -55,24 +132,39 @@ export default function DigitalKeyPage({ params }: DigitalKeyPageProps) {
     setIsRotating(true)
     
     try {
-      // Mock key rotation API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const newToken = `token_${Math.random().toString(36).substring(2)}`
-      const newKeyData = {
-        ...keyData,
-        currentToken: newToken,
-        expiresAt: new Date(Date.now() + 30 * 1000),
-        lastRotatedAt: new Date()
-      }
-      
-      setKeyData(newKeyData)
-      
-      toast({
-        title: "Key Rotated",
-        description: "Your digital key has been updated for security",
+      // Call API to rotate key
+      const response = await fetch(`/api/key/${params.reservationId}`, {
+        method: 'GET',
+        credentials: 'include'
       })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.ok && result.data.key) {
+          const key = result.data.key
+          const newKeyData = {
+            ...keyData,
+            currentToken: key.currentToken,
+            expiresAt: new Date(key.expiresAt),
+            lastRotatedAt: new Date(key.lastRotatedAt),
+            qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(key.currentToken)}`
+          }
+          
+          setKeyData(newKeyData)
+          setTimeLeft(30) // Reset timer
+          
+          toast({
+            title: "Key Rotated",
+            description: "Your digital key has been updated for security",
+          })
+        } else {
+          throw new Error(result.error || 'Failed to rotate key')
+        }
+      } else {
+        throw new Error('Failed to rotate key')
+      }
     } catch (error) {
+      console.error('Key rotation error:', error)
       toast({
         title: "Rotation Failed",
         description: "Unable to rotate key. Please try again.",
@@ -104,7 +196,7 @@ export default function DigitalKeyPage({ params }: DigitalKeyPageProps) {
     })
   }
 
-  if (!keyData) {
+  if (isLoading || !keyData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -122,11 +214,11 @@ export default function DigitalKeyPage({ params }: DigitalKeyPageProps) {
         <div className="text-center mb-8">
           <Button
             variant="outline"
-            onClick={() => router.push('/booking/confirm')}
+            onClick={() => router.push('/account')}
             className="mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Booking
+            Back to My Bookings
           </Button>
           <h1 className="text-4xl font-bold text-primary mb-4">Your Digital Key</h1>
           <p className="text-xl text-gray-600">Access your room with this secure key</p>
@@ -154,15 +246,23 @@ export default function DigitalKeyPage({ params }: DigitalKeyPageProps) {
                   transition={{ duration: 0.5 }}
                   className="inline-block p-4 bg-white rounded-lg border-2 border-gray-200"
                 >
-                  <div className="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <QrCode className="h-16 w-16 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">QR Code</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {keyData.currentToken.substring(0, 8)}...
-                      </p>
+                  {keyData.qrCode ? (
+                    <img 
+                      src={keyData.qrCode} 
+                      alt="Digital Key QR Code"
+                      className="w-48 h-48"
+                    />
+                  ) : (
+                    <div className="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <QrCode className="h-16 w-16 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">QR Code</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {keyData.currentToken.substring(0, 8)}...
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </motion.div>
 
                 {/* Timer */}

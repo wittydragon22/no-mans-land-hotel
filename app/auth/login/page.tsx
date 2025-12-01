@@ -49,14 +49,26 @@ export default function LoginPage() {
           description: "Welcome back!",
         })
         
+        // Clear old booking data from previous session
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('bookingData')
+        }
+        
+        // Trigger a custom event to refresh navbar
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('auth-change'))
+        }
+        
         // Redirect based on user role
         if (result.data.user.role === 'admin') {
           router.push('/admin')
         } else if (result.data.user.role === 'operator') {
           router.push('/operator')
         } else {
-          router.push('/booking')
+          // Guest users go to home page
+          router.push('/')
         }
+        router.refresh()
       } else {
         toast({
           title: "Login Failed",

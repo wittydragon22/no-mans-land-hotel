@@ -74,3 +74,10 @@ export function validateExpiryDate(month: number, year: number): boolean {
   return true
 }
 
+/**
+ * Generate a 6-digit confirmation code
+ */
+export function generateConfirmationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+

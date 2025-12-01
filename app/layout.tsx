@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: "No Man's Land Automated Hotel",
   description: 'Revolutionary autonomous hotel experience with AI-powered booking and check-in',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({

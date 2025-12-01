@@ -2,35 +2,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowRight, Camera, Key, Shield, Smartphone, Zap } from 'lucide-react'
 import Link from 'next/link'
+import { Navbar } from '@/components/navbar'
 import { LogoSVG } from '@/components/logo'
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary to-primary/80">
       {/* Navigation */}
-      <nav className="border-b bg-white/10 backdrop-blur-md">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <LogoSVG variant="light" />
-            <div className="hidden md:flex items-center space-x-6">
-              <Link href="/features" className="text-white/90 hover:text-white transition-colors">
-                Features
-              </Link>
-              <Link href="/docs" className="text-white/90 hover:text-white transition-colors">
-                Docs
-              </Link>
-              <Link href="/support" className="text-white/90 hover:text-white transition-colors">
-                Support
-              </Link>
-              <Link href="/auth/login">
-                <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-                  Sign In
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar variant="light" />
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20">
@@ -46,18 +25,18 @@ export default function LandingPage() {
               facial recognition, and digital keys. No front desk, no waiting.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/booking">
-                <Button size="lg" className="bg-secondary text-primary hover:bg-secondary/90 text-lg px-8 py-4">
+              <Button asChild size="lg" className="bg-secondary text-primary hover:bg-secondary/90 text-lg px-8 py-4">
+                <Link href="/booking">
                   Book Now
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/checkin">
-                <Button variant="outline" size="lg" className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-lg px-8 py-4">
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-lg px-8 py-4">
+                <Link href="/checkin">
                   Check In
                   <Key className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           </div>
 
@@ -143,12 +122,12 @@ export default function LandingPage() {
               Join thousands of guests who have already experienced the seamless, 
               autonomous hotel experience.
             </p>
-            <Link href="/booking">
-              <Button size="lg" className="bg-secondary text-primary hover:bg-secondary/90 text-lg px-8 py-4">
+            <Button asChild size="lg" className="bg-secondary text-primary hover:bg-secondary/90 text-lg px-8 py-4">
+              <Link href="/booking">
                 Start Your Journey
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -158,7 +137,9 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0">
-              <LogoSVG variant="light" showText={true} />
+              <Link href="/">
+                <LogoSVG variant="light" showText={true} />
+              </Link>
             </div>
             <div className="flex space-x-6 text-white/80">
               <Link href="/features" className="hover:text-white transition-colors">Features</Link>

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import { useToast } from '@/components/ui/use-toast'
 
 import { Button } from '@/components/ui/button'
@@ -97,9 +98,9 @@ export default function SupportPage() {
               <a href="/features" className="text-gray-600 hover:text-primary transition-colors">Features</a>
               <a href="/docs" className="text-gray-600 hover:text-primary transition-colors">Docs</a>
               <a href="/support" className="text-primary font-semibold">Support</a>
-              <a href="/booking">
-                <Button className="bg-primary">Book Now</Button>
-              </a>
+              <Button asChild className="bg-primary">
+                <Link href="/booking">Book Now</Link>
+              </Button>
             </div>
           </div>
         </div>

@@ -136,9 +136,9 @@ export default function DocsPage() {
               <Link href="/features" className="text-gray-600 hover:text-primary transition-colors">Features</Link>
               <Link href="/docs" className="text-primary font-semibold">Docs</Link>
               <Link href="/support" className="text-gray-600 hover:text-primary transition-colors">Support</Link>
-              <Link href="/booking">
-                <Button className="bg-primary">Book Now</Button>
-              </Link>
+              <Button asChild className="bg-primary">
+                <Link href="/booking">Book Now</Link>
+              </Button>
             </div>
           </div>
         </div>

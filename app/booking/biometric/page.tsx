@@ -9,7 +9,7 @@ import { StepWizard } from '@/components/booking/step-wizard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CameraCapture } from '@/components/booking/camera-capture'
-import { ArrowLeft, Camera, Shield, CheckCircle, AlertTriangle, Clock } from 'lucide-react'
+import { ArrowLeft, Camera, Shield, CheckCircle, AlertTriangle, Clock, TestTube } from 'lucide-react'
 
 const steps = [
   { id: 'search', title: 'Search', description: 'Find your room', status: 'completed' as const },
@@ -201,15 +201,52 @@ export default function BiometricPage() {
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Face Verification
-              </CardTitle>
-              <CardDescription>
-                We'll compare your face with your ID document for secure verification
-              </CardDescription>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Face Verification
+                  </CardTitle>
+                  <CardDescription>
+                    We'll compare your face with your ID document for secure verification
+                  </CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Simulate successful biometric verification
+                    setBiometricStatus('pass')
+                    setMatchScore(95) // High match score
+                    setCapturedImage(null) // No image needed for test
+                    toast({
+                      title: "✅ Test Face Verification",
+                      description: "Biometric verification bypassed (Test Mode)",
+                    })
+                  }}
+                  className="flex items-center gap-2 w-full sm:w-auto"
+                >
+                  <TestTube className="h-4 w-4" />
+                  Test Face (Skip)
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
+              {/* Test Mode Banner */}
+              <div className="mb-4 p-4 bg-blue-50 border-2 border-blue-300 rounded-md">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-blue-900 mb-1">
+                      🧪 Testing Mode - Skip Face Verification
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      Click "Test Face (Skip)" button above to bypass facial recognition and proceed directly to confirmation.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-6">
                 {/* Status Display */}
                 <div className="text-center">
@@ -298,7 +335,7 @@ export default function BiometricPage() {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-4">
                   <Button
                     variant="outline"
                     onClick={handleBack}
@@ -308,37 +345,61 @@ export default function BiometricPage() {
                     Back to Payment
                   </Button>
 
-                  {biometricStatus === 'pending' && capturedImage && (
-                    <Button
-                      onClick={processBiometricMatch}
-                      disabled={isProcessing}
-                      className="bg-primary"
-                    >
-                      {isProcessing ? 'Processing...' : 'Verify Identity'}
-                    </Button>
-                  )}
+                  <div className="flex gap-2">
+                    {biometricStatus === 'pending' && (
+                      <>
+                        {capturedImage && (
+                          <Button
+                            onClick={processBiometricMatch}
+                            disabled={isProcessing}
+                            className="bg-primary"
+                          >
+                            {isProcessing ? 'Processing...' : 'Verify Identity'}
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            // Simulate successful biometric verification
+                            setBiometricStatus('pass')
+                            setMatchScore(95)
+                            setCapturedImage(null)
+                            toast({
+                              title: "✅ Test Face Verification",
+                              description: "Biometric verification bypassed (Test Mode)",
+                            })
+                          }}
+                          className="flex items-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                        >
+                          <TestTube className="h-4 w-4" />
+                          Test Face (Skip)
+                        </Button>
+                      </>
+                    )}
 
-                  {(biometricStatus === 'pass' || biometricStatus === 'manual_review') && (
-                    <Button
-                      onClick={handleContinue}
-                      className="bg-primary"
-                    >
-                      Continue to Confirmation
-                    </Button>
-                  )}
+                    {(biometricStatus === 'pass' || biometricStatus === 'manual_review') && (
+                      <Button
+                        onClick={handleContinue}
+                        className="bg-primary"
+                      >
+                        Continue to Confirmation
+                      </Button>
+                    )}
 
-                  {biometricStatus === 'fail' && (
-                    <Button
-                      onClick={() => {
-                        setCapturedImage(null)
-                        setBiometricStatus('pending')
-                        setMatchScore(null)
-                      }}
-                      className="bg-primary"
-                    >
-                      Try Again
-                    </Button>
-                  )}
+                    {biometricStatus === 'fail' && (
+                      <Button
+                        onClick={() => {
+                          setCapturedImage(null)
+                          setBiometricStatus('pending')
+                          setMatchScore(null)
+                        }}
+                        className="bg-primary"
+                      >
+                        Try Again
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>

@@ -9,6 +9,7 @@ import { StepWizard } from '@/components/booking/step-wizard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ArrowLeft, CheckCircle, Key, Shield, CreditCard, User, Calendar, MapPin } from 'lucide-react'
 
@@ -28,6 +29,7 @@ export default function ConfirmationPage() {
   const [isConfirming, setIsConfirming] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [digitalKey, setDigitalKey] = useState<any>(null)
+  const [confirmationCode, setConfirmationCode] = useState<string | null>(null)
 
   useEffect(() => {
     // Load booking data from session storage
@@ -36,8 +38,48 @@ export default function ConfirmationPage() {
       router.push('/booking')
       return
     }
-    setBookingData(JSON.parse(stored))
-  }, [router])
+
+    try {
+      const parsed = JSON.parse(stored)
+      
+      // Verify booking data belongs to current user (if logged in)
+      const verifyUserMatch = async () => {
+        try {
+          const response = await fetch('/api/auth/me', {
+            credentials: 'include'
+          })
+          
+          if (response.ok) {
+            const result = await response.json()
+            if (result.ok && result.data.user) {
+              const currentUserEmail = result.data.user.email
+              // Check if booking data email matches current user
+              if (parsed.guestDetails?.email && parsed.guestDetails.email !== currentUserEmail) {
+                // Email mismatch - clear old data and redirect
+                sessionStorage.removeItem('bookingData')
+                toast({
+                  title: "Session Expired",
+                  description: "Please start a new booking",
+                  variant: "destructive",
+                })
+                router.push('/booking')
+                return
+              }
+            }
+          }
+        } catch (error) {
+          console.error('User verification error:', error)
+        }
+      }
+      
+      verifyUserMatch()
+      setBookingData(parsed)
+    } catch (error) {
+      console.error('Failed to parse booking data:', error)
+      sessionStorage.removeItem('bookingData')
+      router.push('/booking')
+    }
+  }, [router, toast])
 
   const handleConfirmBooking = async () => {
     if (!agreedToTerms) {
@@ -52,37 +94,70 @@ export default function ConfirmationPage() {
     setIsConfirming(true)
 
     try {
-      // Mock booking confirmation API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Generate digital key
-      const mockDigitalKey = {
-        id: `key_${Date.now()}`,
-        reservationId: `res_${Date.now()}`,
-        currentToken: `token_${Math.random().toString(36).substring(2)}`,
-        expiresAt: new Date(Date.now() + 30 * 1000), // 30 seconds
-        qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`key_${Date.now()}`)}`
+      // Validate booking data
+      if (!bookingData?.selectedRoom || !bookingData?.search || !bookingData?.guestDetails) {
+        throw new Error('Missing booking data. Please start over.')
+      }
+
+      // Call the complete booking API
+      const response = await fetch('/api/booking/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          roomId: bookingData.selectedRoom.id || bookingData.selectedRoom.number,
+          checkInDate: bookingData.search.checkInDate,
+          checkOutDate: bookingData.search.checkOutDate,
+          guests: bookingData.search.guests || 1,
+          guestDetails: bookingData.guestDetails,
+          paymentDetails: bookingData.paymentDetails,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Network error' }))
+        throw new Error(errorData.error || `Server error: ${response.status}`)
+      }
+
+      const result = await response.json()
+
+      if (!result.ok) {
+        throw new Error(result.error || 'Booking confirmation failed')
+      }
+
+      // Set digital key and confirmation code from API response
+      const apiDigitalKey = {
+        id: result.data.digitalKey.id,
+        reservationId: result.data.reservation.id,
+        currentToken: result.data.digitalKey.currentToken,
+        expiresAt: new Date(result.data.digitalKey.expiresAt),
+        qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(result.data.digitalKey.currentToken)}`
       }
       
-      setDigitalKey(mockDigitalKey)
+      setDigitalKey(apiDigitalKey)
+      setConfirmationCode(result.data.reservation.confirmationCode)
       
       // Store in session storage
       const updatedBookingData = {
         ...bookingData,
         confirmed: true,
-        digitalKey: mockDigitalKey
+        reservationId: result.data.reservation.id,
+        confirmationCode: result.data.reservation.confirmationCode,
+        digitalKey: apiDigitalKey
       }
       sessionStorage.setItem('bookingData', JSON.stringify(updatedBookingData))
       
       toast({
         title: "Booking Confirmed!",
-        description: "Your digital key has been generated successfully",
+        description: `Confirmation code and digital key sent to ${bookingData.guestDetails.email}. Check your email!`,
       })
       
     } catch (error) {
+      console.error('Booking confirmation error:', error)
       toast({
         title: "Confirmation Failed",
-        description: "Please try again",
+        description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       })
     } finally {
@@ -157,11 +232,20 @@ export default function ConfirmationPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-green-800 mb-2">Digital Key Details</h4>
+                  <h4 className="font-semibold text-green-800 mb-2">Booking Confirmation</h4>
                   <div className="text-sm text-green-700 space-y-1">
+                    {confirmationCode && (
+                      <div className="mb-2">
+                        <span className="font-semibold">Confirmation Code: </span>
+                        <span className="text-lg font-mono font-bold">{confirmationCode}</span>
+                      </div>
+                    )}
                     <div>Reservation ID: {digitalKey.reservationId}</div>
                     <div>Key Token: {digitalKey.currentToken.substring(0, 8)}...</div>
-                    <div>Expires: {new Date(digitalKey.expiresAt).toLocaleTimeString('en-US')}</div>
+                    <div>Expires: {new Date(digitalKey.expiresAt).toLocaleString('en-US')}</div>
+                    <div className="mt-2 text-xs text-green-600">
+                      📧 Confirmation code and digital key have been sent to your email
+                    </div>
                   </div>
                 </div>
 

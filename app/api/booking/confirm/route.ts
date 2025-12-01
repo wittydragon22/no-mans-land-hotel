@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getUserFromRequest } from '@/lib/auth'
-import { generateToken } from '@/lib/utils'
+import { generateToken, generateConfirmationCode } from '@/lib/utils'
+import { sendConfirmationCodeEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -80,10 +81,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update reservation status
+    // Generate confirmation code
+    let confirmationCode: string
+    let isUnique = false
+    while (!isUnique) {
+      confirmationCode = generateConfirmationCode()
+      const existing = await prisma.reservation.findUnique({
+        where: { confirmationCode }
+      })
+      if (!existing) {
+        isUnique = true
+      }
+    }
+
+    // Update reservation status and add confirmation code
     const updatedReservation = await prisma.reservation.update({
       where: { id: reservationId },
-      data: { status: 'confirmed' }
+      data: { 
+        status: 'confirmed',
+        confirmationCode: confirmationCode!
+      }
     })
 
     // Generate digital key
@@ -105,6 +122,21 @@ export async function POST(request: NextRequest) {
       data: { status: 'occupied' }
     })
 
+    // Send confirmation code email with digital key
+    if (reservation.guestProfile) {
+      await sendConfirmationCodeEmail(
+        reservation.guestProfile.email,
+        confirmationCode!,
+        reservation.id,
+        `${reservation.guestProfile.firstName} ${reservation.guestProfile.lastName}`,
+        reservation.checkInDate,
+        reservation.checkOutDate,
+        reservation.room.number,
+        digitalKey.currentToken,
+        digitalKey.expiresAt
+      )
+    }
+
     // Log audit event
     await prisma.auditLog.create({
       data: {
@@ -115,7 +147,8 @@ export async function POST(request: NextRequest) {
         details: {
           digitalKeyId: digitalKey.id,
           biometricStatus: reservation.biometricCheck.status,
-          matchScore: reservation.biometricCheck.matchScore
+          matchScore: reservation.biometricCheck.matchScore,
+          confirmationCode: confirmationCode
         }
       }
     })
@@ -126,7 +159,8 @@ export async function POST(request: NextRequest) {
         reservation: {
           id: updatedReservation.id,
           status: updatedReservation.status,
-          totalAmount: updatedReservation.totalAmount
+          totalAmount: updatedReservation.totalAmount,
+          confirmationCode: updatedReservation.confirmationCode
         },
         digitalKey: {
           id: digitalKey.id,

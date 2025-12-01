@@ -54,12 +54,13 @@ export function Logo({ className = '', showText = true, variant = 'dark' }: Logo
 }
 
 // Logo Component that tries to use image first, falls back to SVG
+// Note: This component does NOT include a Link - wrap it in a Link if needed
 export function LogoSVG({ className = '', showText = true, variant = 'dark' }: LogoProps) {
   const textColor = variant === 'light' ? 'text-white' : 'text-primary'
   const [imageError, setImageError] = useState(false)
   
   return (
-    <Link href="/" className={`flex items-center space-x-3 ${className}`}>
+    <div className={`flex items-center space-x-3 ${className}`}>
       <div className="relative h-10 w-10 flex-shrink-0">
         {imageError ? (
           <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -94,7 +95,7 @@ export function LogoSVG({ className = '', showText = true, variant = 'dark' }: L
           </span>
         </div>
       )}
-    </Link>
+    </div>
   )
 }
 

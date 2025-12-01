@@ -112,9 +112,9 @@ export default function FeaturesPage() {
               <Link href="/support" className="text-gray-600 hover:text-primary transition-colors">
                 Support
               </Link>
-              <Link href="/booking">
-                <Button className="bg-primary">Book Now</Button>
-              </Link>
+              <Button asChild className="bg-primary">
+                <Link href="/booking">Book Now</Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -269,17 +269,17 @@ export default function FeaturesPage() {
                   autonomous hotel experience.
                 </p>
                 <div className="space-y-4">
-                  <Link href="/booking">
-                    <Button size="lg" className="w-full bg-secondary text-primary hover:bg-secondary/90">
+                  <Button asChild size="lg" className="w-full bg-secondary text-primary hover:bg-secondary/90">
+                    <Link href="/booking">
                       Book Your Stay
                       <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
-                  </Link>
-                  <Link href="/auth/register">
-                    <Button variant="outline" size="lg" className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20">
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg" className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20">
+                    <Link href="/auth/register">
                       Create Account
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </div>
               </div>
             </motion.div>

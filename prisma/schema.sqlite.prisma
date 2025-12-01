@@ -64,6 +64,7 @@ model Reservation {
   status          String            @default("pending") // pending, confirmed, checked_in, checked_out, canceled
   totalAmount     Int              // Total amount in cents
   depositHoldCents Int             // Deposit hold amount in cents
+  confirmationCode String?       @unique // 6-digit confirmation code sent via email
   createdAt       DateTime         @default(now())
 
   // Relations

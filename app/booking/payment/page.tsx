@@ -15,7 +15,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { paymentSchema } from '@/lib/validations'
 import { formatCurrency, validateCardNumber, validateExpiryDate } from '@/lib/utils'
-import { ArrowLeft, CreditCard, Shield, Lock } from 'lucide-react'
+import { getTestCard, getTestBillingAddress, TEST_CARDS } from '@/lib/test-cards'
+import { ArrowLeft, CreditCard, Shield, Lock, TestTube } from 'lucide-react'
 
 const steps = [
   { id: 'search', title: 'Search', description: 'Find your room', status: 'completed' as const },
@@ -175,15 +176,85 @@ export default function PaymentPage() {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Payment Information
-                </CardTitle>
-                <CardDescription>
-                  Your payment information is encrypted and secure
-                </CardDescription>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <CreditCard className="h-5 w-5" />
+                      Payment Information
+                    </CardTitle>
+                    <CardDescription>
+                      Your payment information is encrypted and secure
+                    </CardDescription>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const testCard = getTestCard(0) // Use first test card
+                      const testAddress = getTestBillingAddress()
+                      setValue('cardNumber', testCard.number)
+                      setValue('expiryMonth', testCard.expiryMonth)
+                      setValue('expiryYear', testCard.expiryYear)
+                      setValue('cvv', testCard.cvv)
+                      setValue('billingAddress.street', testAddress.street)
+                      setValue('billingAddress.city', testAddress.city)
+                      setValue('billingAddress.state', testAddress.state)
+                      setValue('billingAddress.zipCode', testAddress.zipCode)
+                      setValue('billingAddress.country', testAddress.country)
+                      toast({
+                        title: "Test Card Loaded",
+                        description: `Using ${testCard.name}: ${testCard.number}`,
+                      })
+                    }}
+                    className="flex items-center gap-2 w-full sm:w-auto"
+                  >
+                    <TestTube className="h-4 w-4" />
+                    Use Test Card
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
+                {/* Test Card Info Banner */}
+                <div className="mb-4 p-4 bg-blue-50 border-2 border-blue-300 rounded-md">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-blue-900 mb-1">
+                        🧪 Testing Mode - Quick Fill Test Card
+                      </p>
+                      <p className="text-xs text-blue-700">
+                        Click the button below or use: <strong>4242 4242 4242 4242</strong> (Expiry: 12/2027, CVV: 123)
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        const testCard = getTestCard(0)
+                        const testAddress = getTestBillingAddress()
+                        setValue('cardNumber', testCard.number)
+                        setValue('expiryMonth', testCard.expiryMonth)
+                        setValue('expiryYear', testCard.expiryYear)
+                        setValue('cvv', testCard.cvv)
+                        setValue('billingAddress.street', testAddress.street)
+                        setValue('billingAddress.city', testAddress.city)
+                        setValue('billingAddress.state', testAddress.state)
+                        setValue('billingAddress.zipCode', testAddress.zipCode)
+                        setValue('billingAddress.country', testAddress.country)
+                        toast({
+                          title: "✅ Test Card Loaded",
+                          description: `Using ${testCard.name}: ${testCard.number}`,
+                        })
+                      }}
+                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
+                    >
+                      <TestTube className="h-4 w-4" />
+                      Fill Test Card
+                    </Button>
+                  </div>
+                </div>
+                
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                   {/* Card Information */}
                   <div>
