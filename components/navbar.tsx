@@ -157,8 +157,14 @@ export function Navbar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
             <LogoSVG variant={isLight ? 'light' : 'dark'} />
           </Link>
           <div className="hidden md:flex items-center space-x-6">
+            <Link href="/" className={`${textColor} transition-colors`}>
+              Home
+            </Link>
             <Link href="/features" className={`${textColor} transition-colors`}>
               Features
+            </Link>
+            <Link href="/about" className={`${textColor} transition-colors`}>
+              About
             </Link>
             <Link href="/docs" className={`${textColor} transition-colors`}>
               Docs

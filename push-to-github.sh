@@ -37,4 +37,3 @@ echo "   git remote set-url origin git@github.com:${GITHUB_USERNAME}/${REPO_NAME
 echo "   git push -u origin main"
 echo ""
 
-

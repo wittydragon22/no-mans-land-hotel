@@ -4,6 +4,7 @@ import { ArrowRight, Camera, Key, Shield, Smartphone, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { Navbar } from '@/components/navbar'
 import { LogoSVG } from '@/components/logo'
+import { LobbyCarousel } from '@/components/lobby-carousel'
 
 export default function LandingPage() {
   return (
@@ -40,15 +41,23 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Demo Video/Animation Placeholder */}
+          {/* Lobby Gallery Carousel */}
           <div className="mt-16 relative">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-              <div className="aspect-video bg-gradient-to-br from-secondary/20 to-primary/20 rounded-xl flex items-center justify-center">
-                <div className="text-center">
-                  <Camera className="h-16 w-16 text-secondary mx-auto mb-4" />
-                  <p className="text-white/80">Autonomous Check-in Demo</p>
-                </div>
+              <div className="mb-4 text-center">
+                <h3 className="text-2xl font-semibold text-white mb-2">Hotel Lobby Gallery</h3>
+                <p className="text-white/80">Experience our modern, welcoming lobby space</p>
               </div>
+              <LobbyCarousel 
+                images={[
+                  '/images/lobby/1.jpg',
+                  '/images/lobby/2.jpg',
+                  '/images/lobby/3.jpg',
+                  '/images/lobby/4.jpg',
+                  '/images/lobby/5.jpg',
+                ]}
+                autoPlayInterval={4000}
+              />
             </div>
           </div>
         </div>
@@ -142,7 +151,9 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="flex space-x-6 text-white/80">
+              <Link href="/" className="hover:text-white transition-colors">Home</Link>
               <Link href="/features" className="hover:text-white transition-colors">Features</Link>
+              <Link href="/about" className="hover:text-white transition-colors">About</Link>
               <Link href="/docs" className="hover:text-white transition-colors">Documentation</Link>
               <Link href="/support" className="hover:text-white transition-colors">Support</Link>
             </div>

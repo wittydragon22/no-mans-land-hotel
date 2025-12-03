@@ -1,16 +1,24 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Camera, RotateCcw, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
 interface CameraCaptureProps {
-  onCapture: (file: File, type: 'front' | 'back') => void
+  onCapture: (file: File, type?: 'front' | 'back') => void
+  autoStart?: boolean
+  facingMode?: 'user' | 'environment'
+  forFaceVerification?: boolean
 }
 
-export function CameraCapture({ onCapture }: CameraCaptureProps) {
+export function CameraCapture({ 
+  onCapture, 
+  autoStart = false,
+  facingMode = 'user',
+  forFaceVerification = false
+}: CameraCaptureProps) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [captureType, setCaptureType] = useState<'front' | 'back'>('front')
@@ -19,10 +27,15 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   const streamRef = useRef<MediaStream | null>(null)
 
   const startCamera = useCallback(async () => {
+    // Don't start if already streaming
+    if (streamRef.current) {
+      return
+    }
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
-          facingMode: 'environment', // Use back camera if available
+          facingMode: forFaceVerification ? facingMode : 'environment', // Use front camera for face verification
           width: { ideal: 1280 },
           height: { ideal: 720 }
         }
@@ -37,7 +50,58 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
       console.error('Error accessing camera:', error)
       alert('Unable to access camera. Please check permissions.')
     }
-  }, [])
+  }, [facingMode, forFaceVerification])
+
+  // Auto-start camera if autoStart is true
+  useEffect(() => {
+    if (!autoStart) {
+      return
+    }
+    
+    // Check if already has stream (use ref to avoid dependency on isStreaming state)
+    if (streamRef.current) {
+      return
+    }
+    
+    let mounted = true
+    
+    // Use setTimeout to ensure component is fully mounted
+    const timer = setTimeout(() => {
+      if (!mounted || streamRef.current) return
+      
+      navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: forFaceVerification ? facingMode : 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      }).then((stream) => {
+        if (!mounted || streamRef.current) {
+          stream.getTracks().forEach(track => track.stop())
+          return
+        }
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          streamRef.current = stream
+          setIsStreaming(true)
+        }
+      }).catch((error) => {
+        console.error('Error accessing camera:', error)
+        alert('Unable to access camera. Please check permissions.')
+      })
+    }, 100)
+    
+    return () => {
+      mounted = false
+      clearTimeout(timer)
+      // Cleanup on unmount
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop())
+        streamRef.current = null
+      }
+    }
+  }, [autoStart, forFaceVerification, facingMode]) // Fixed dependencies - removed isStreaming
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -66,25 +130,39 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
     // Convert to blob
     canvas.toBlob((blob) => {
       if (blob) {
-        const file = new File([blob], `id-${captureType}-${Date.now()}.jpg`, {
+        const fileName = forFaceVerification 
+          ? `face-${Date.now()}.jpg`
+          : `id-${captureType}-${Date.now()}.jpg`
+        const file = new File([blob], fileName, {
           type: 'image/jpeg'
         })
         setCapturedImage(URL.createObjectURL(blob))
-        onCapture(file, captureType)
+        onCapture(file, forFaceVerification ? undefined : captureType)
       }
     }, 'image/jpeg', 0.8)
-  }, [captureType, onCapture])
+  }, [captureType, onCapture, forFaceVerification])
 
   const confirmCapture = useCallback(() => {
     if (capturedImage) {
-      stopCamera()
-      setCapturedImage(null)
+      // For face verification, keep camera running after confirmation
+      if (forFaceVerification) {
+        // Don't stop camera, just clear the preview
+        setCapturedImage(null)
+        // onCapture was already called when photo was taken
+      } else {
+        stopCamera()
+        setCapturedImage(null)
+      }
     }
-  }, [capturedImage, stopCamera])
+  }, [capturedImage, stopCamera, forFaceVerification])
 
   const retakeCapture = useCallback(() => {
     setCapturedImage(null)
-  }, [])
+    // Restart camera if it was stopped
+    if (!isStreaming && autoStart) {
+      startCamera()
+    }
+  }, [autoStart, isStreaming, startCamera])
 
   const switchCamera = useCallback(() => {
     setCaptureType(prev => prev === 'front' ? 'back' : 'front')
@@ -93,33 +171,45 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   return (
     <div className="space-y-4">
       {/* Camera Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={switchCamera}
-            className={captureType === 'front' ? 'bg-primary text-white' : ''}
-          >
-            Front
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={switchCamera}
-            className={captureType === 'back' ? 'bg-primary text-white' : ''}
-          >
-            Back
-          </Button>
-        </div>
+      {!forFaceVerification && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={switchCamera}
+              className={captureType === 'front' ? 'bg-primary text-white' : ''}
+            >
+              Front
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={switchCamera}
+              className={captureType === 'back' ? 'bg-primary text-white' : ''}
+            >
+              Back
+            </Button>
+          </div>
 
-        {!isStreaming && !capturedImage && (
+          {!isStreaming && !capturedImage && (
+            <Button onClick={startCamera} className="bg-primary">
+              <Camera className="h-4 w-4 mr-2" />
+              Start Camera
+            </Button>
+          )}
+        </div>
+      )}
+      
+      {/* Manual start button for face verification if camera didn't auto-start */}
+      {forFaceVerification && !isStreaming && !capturedImage && (
+        <div className="flex justify-center">
           <Button onClick={startCamera} className="bg-primary">
             <Camera className="h-4 w-4 mr-2" />
             Start Camera
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Camera View */}
       {isStreaming && !capturedImage && (
@@ -204,10 +294,14 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
       {!isStreaming && !capturedImage && (
         <div className="text-center text-gray-500">
           <p className="text-sm">
-            Position your ID document clearly within the camera frame
+            {forFaceVerification 
+              ? 'Position your face clearly within the camera frame'
+              : 'Position your ID document clearly within the camera frame'}
           </p>
           <p className="text-xs mt-1">
-            Ensure good lighting and avoid glare or shadows
+            {forFaceVerification
+              ? 'Look directly at the camera and ensure good lighting'
+              : 'Ensure good lighting and avoid glare or shadows'}
           </p>
         </div>
       )}

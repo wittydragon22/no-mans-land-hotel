@@ -7,8 +7,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { FileUpload } from '@/components/booking/file-upload'
-import { CameraCapture } from '@/components/booking/camera-capture'
-import { ArrowLeft, Shield, Camera, CheckCircle, AlertTriangle, Key } from 'lucide-react'
+import { ArrowLeft, Shield, CheckCircle, Key } from 'lucide-react'
 import Link from 'next/link'
 import { LogoSVG } from '@/components/logo'
 
@@ -18,65 +17,31 @@ function CheckInVerifyContent() {
   const { toast } = useToast()
   const [reservationId] = useState(searchParams.get('id') || '')
   const [frontImage, setFrontImage] = useState<File | null>(null)
-  const [faceImage, setFaceImage] = useState<File | null>(null)
-  const [verificationStep, setVerificationStep] = useState<'id' | 'biometric' | 'complete'>('id')
+  const [verificationStep, setVerificationStep] = useState<'id' | 'complete'>('id')
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const handleIDUpload = (file: File) => {
+  const handleIDUpload = async (file: File) => {
     setFrontImage(file)
-    toast({
-      title: "ID Uploaded Successfully",
-      description: "Please continue with facial photo upload",
-    })
-    setVerificationStep('biometric')
-  }
-
-  const handleFaceCapture = (file: File) => {
-    setFaceImage(file)
-  }
-
-  const handleVerify = async () => {
-    if (!frontImage || !faceImage) {
-      toast({
-        title: "Missing Files",
-        description: "Please upload both ID and face photos",
-        variant: "destructive",
-      })
-      return
-    }
-
     setIsProcessing(true)
     
+    toast({
+      title: "ID Uploaded Successfully",
+      description: "Processing your check-in...",
+    })
+    
     try {
-      // Mock verification process
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 1500))
       
-      // Simulate verification result
-      const matchScore = Math.floor(Math.random() * 100)
-      
-      if (matchScore >= 80) {
-        setVerificationStep('complete')
-        toast({
-          title: "Verification Successful",
-          description: `Match score: ${matchScore}% - Identity verified`,
-        })
-      } else if (matchScore >= 60) {
-        toast({
-          title: "Manual Review Required",
-          description: `Match score: ${matchScore}% - Please wait for staff review`,
-        })
-        // Still allow to proceed
-        setVerificationStep('complete')
-      } else {
-        toast({
-          title: "Verification Failed",
-          description: `Match score: ${matchScore}% - Please try again`,
-          variant: "destructive",
-        })
-      }
+      // Directly complete check-in after ID upload
+      setVerificationStep('complete')
+      toast({
+        title: "Check-In Successful!",
+        description: "Your identity has been verified",
+      })
     } catch (error) {
       toast({
-        title: "Verification Failed",
+        title: "Upload Failed",
         description: "Please try again",
         variant: "destructive",
       })
@@ -156,7 +121,7 @@ function CheckInVerifyContent() {
                     Upload ID Document
                   </CardTitle>
                   <CardDescription>
-                    Please upload a photo of the front of your ID document
+                    Please upload a photo of the front of your ID document to complete check-in
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -165,65 +130,24 @@ function CheckInVerifyContent() {
                     acceptedTypes={['image/jpeg', 'image/png', 'application/pdf']}
                     maxSize={5 * 1024 * 1024} // 5MB
                   />
-                  {frontImage && (
+                  {isProcessing && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-blue-700">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700"></div>
+                        <span className="text-sm font-medium">Processing your check-in...</span>
+                      </div>
+                    </div>
+                  )}
+                  {frontImage && !isProcessing && (
                     <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                       <div className="flex items-center gap-2 text-green-700">
                         <CheckCircle className="h-4 w-4" />
-                        <span className="text-sm font-medium">ID uploaded</span>
+                        <span className="text-sm font-medium">ID uploaded successfully</span>
                       </div>
                     </div>
                   )}
                 </CardContent>
               </Card>
-            </div>
-          )}
-
-          {/* Biometric Step */}
-          {verificationStep === 'biometric' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Camera className="h-5 w-5" />
-                    Facial Recognition Verification
-                  </CardTitle>
-                  <CardDescription>
-                    Please take a clear photo of your face for identity verification
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <CameraCapture
-                    onCapture={handleFaceCapture}
-                  />
-                  {faceImage && (
-                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center gap-2 text-green-700">
-                        <CheckCircle className="h-4 w-4" />
-                        <span className="text-sm font-medium">Face photo captured</span>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <div className="flex gap-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setVerificationStep('id')}
-                  className="flex-1"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Previous Step
-                </Button>
-                <Button
-                  onClick={handleVerify}
-                  disabled={!frontImage || !faceImage || isProcessing}
-                  className="flex-1 bg-primary"
-                >
-                  {isProcessing ? 'Verifying...' : 'Start Verification'}
-                  <Shield className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
             </div>
           )}
 
@@ -240,7 +164,7 @@ function CheckInVerifyContent() {
                 <CardContent>
                   <div className="space-y-4">
                     <p className="text-green-700">
-                      Congratulations! Your identity verification is complete. You can now complete check-in and get your digital key.
+                      Congratulations! Your check-in is complete. You can now get your digital key.
                     </p>
                     <div className="bg-white rounded-lg p-4 border border-green-200">
                       <div className="flex items-center justify-between mb-2">

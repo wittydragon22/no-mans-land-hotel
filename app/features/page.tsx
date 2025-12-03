@@ -1,3 +1,5 @@
+'use client'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
@@ -105,6 +107,9 @@ export default function FeaturesPage() {
               </Link>
               <Link href="/features" className="text-primary font-semibold">
                 Features
+              </Link>
+              <Link href="/about" className="text-gray-600 hover:text-primary transition-colors">
+                About
               </Link>
               <Link href="/docs" className="text-gray-600 hover:text-primary transition-colors">
                 Docs
@@ -302,6 +307,7 @@ export default function FeaturesPage() {
             <div>
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-gray-400">
+                <li><Link href="/" className="hover:text-white transition-colors">Home</Link></li>
                 <li><Link href="/features" className="hover:text-white transition-colors">Features</Link></li>
                 <li><Link href="/booking" className="hover:text-white transition-colors">Booking</Link></li>
                 <li><Link href="/docs" className="hover:text-white transition-colors">Documentation</Link></li>
